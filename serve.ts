@@ -1,0 +1,11 @@
+import { createServer } from 'node:http';
+import { readFile, stat } from 'node:fs/promises';
+import { resolve, sep, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root = resolve(fileURLToPath(new URL('./game/', import.meta.url)));
+const args = process.argv.slice(2);
+let port = 8080;
+const at = args.indexOf('--port');
+if (at >= 0 && args[at + 1]) port = Number(args[at + 1]);
+const mime = { '.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.glb':'model/gltf-binary','.wav':'audio/wav','.ogg':'audio/ogg' };
+createServer(async (req,res) => { try { const url = new URL(req.url || '/', 'http://127.0.0.1'); const path = resolve(root, '.' + decodeURIComponent(url.pathname)); if (path !== root && !path.startsWith(root + sep)) { res.writeHead(403); res.end('Forbidden'); return; } const info = await stat(path); const file = info.isDirectory() ? resolve(path, 'index.html') : path; const data = await readFile(file); res.writeHead(200, { 'Content-Type': mime[extname(file)] || 'application/octet-stream' }); res.end(data); } catch { res.writeHead(404); res.end('Not found'); } }).listen(port, '127.0.0.1', () => console.log('Meridian Yard at http://127.0.0.1:' + port));
